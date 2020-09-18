@@ -3,6 +3,7 @@ package com.arthurb.minhasfinancias.services.impl;
 import com.arthurb.minhasfinancias.exception.RegraNegocioException;
 import com.arthurb.minhasfinancias.model.entity.Lancamento;
 import com.arthurb.minhasfinancias.model.enums.StatusLancamento;
+import com.arthurb.minhasfinancias.model.enums.TipoLancamento;
 import com.arthurb.minhasfinancias.model.repository.LancamentoRepository;
 import com.arthurb.minhasfinancias.services.LancamentoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 public class LancamentoServiceImpl implements LancamentoService {
@@ -89,4 +91,28 @@ public class LancamentoServiceImpl implements LancamentoService {
             throw new RegraNegocioException("Informe um tipo de Lançamento.");
         }
     }
+
+    @Override
+    public Optional<Lancamento> obterPorId(Long id) {
+        return repository.findById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public BigDecimal obterSaldoPorUsuario(Long id) {
+
+        BigDecimal receitas = repository.obterSaldoPorTipoLancamentoEUsuarioEStatus(id, TipoLancamento.RECEITA, StatusLancamento.EFETIVADO);
+        BigDecimal despesas = repository.obterSaldoPorTipoLancamentoEUsuarioEStatus(id, TipoLancamento.DESPESA, StatusLancamento.EFETIVADO);
+
+        if(receitas == null) {
+            receitas = BigDecimal.ZERO;
+        }
+
+        if(despesas == null) {
+            despesas = BigDecimal.ZERO;
+        }
+
+        return receitas.subtract(despesas);
+    }
+
 }

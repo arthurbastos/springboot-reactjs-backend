@@ -8,6 +8,7 @@ import com.arthurb.minhasfinancias.services.UsuarioService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -48,5 +49,10 @@ public class UsuarioServiceImpl implements UsuarioService {
         if(existe) {
             throw new RegraNegocioException("Já existe um usuário cadastrado com este email.");
         }
+    }
+
+    @Override
+    public Optional<Usuario> obterPorId(Long id) {
+        return repository.findById(id);
     }
 }
