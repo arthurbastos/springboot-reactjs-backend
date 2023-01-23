@@ -1,9 +1,11 @@
 package com.arthurb.minhasfinancias.api.resource;
 
+import com.arthurb.minhasfinancias.api.dto.TokenDTO;
 import com.arthurb.minhasfinancias.api.dto.UsuarioDTO;
 import com.arthurb.minhasfinancias.exception.ErroAutenticacao;
 import com.arthurb.minhasfinancias.exception.RegraNegocioException;
 import com.arthurb.minhasfinancias.model.entity.Usuario;
+import com.arthurb.minhasfinancias.services.JwtService;
 import com.arthurb.minhasfinancias.services.LancamentoService;
 import com.arthurb.minhasfinancias.services.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,12 +26,17 @@ public class UsuarioResource {
     @Autowired
     private LancamentoService lancamentoService;
 
+    @Autowired
+    private JwtService jwtService;
+
     @PostMapping("/autenticar")
-    public ResponseEntity autenticar(@RequestBody UsuarioDTO dto){
+    public ResponseEntity<?> autenticar(@RequestBody UsuarioDTO dto){
         try {
             Usuario usuarioAutenticado = service.autenticar(dto.getEmail(), dto.getSenha());
-            usuarioAutenticado.setSenha(null);
-            return ResponseEntity.ok(usuarioAutenticado);
+            String token = jwtService.gerarToken(usuarioAutenticado);
+            TokenDTO tokenDTO = new TokenDTO(usuarioAutenticado.getNome(), token);
+
+            return ResponseEntity.ok(tokenDTO);
         }catch (ErroAutenticacao e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -40,7 +47,8 @@ public class UsuarioResource {
         Usuario usuario = Usuario.builder()
                 .nome(dto.getNome())
                 .email(dto.getEmail())
-                .senha(dto.getSenha()).build();
+                .senha(dto.getSenha())
+                .build();
         try {
             Usuario usuarioSalvo = service.salvarUsuario(usuario);
             return new ResponseEntity(usuarioSalvo, HttpStatus.CREATED);

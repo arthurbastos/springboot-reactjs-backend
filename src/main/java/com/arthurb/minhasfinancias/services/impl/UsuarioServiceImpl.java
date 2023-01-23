@@ -5,6 +5,7 @@ import com.arthurb.minhasfinancias.exception.RegraNegocioException;
 import com.arthurb.minhasfinancias.model.entity.Usuario;
 import com.arthurb.minhasfinancias.model.repository.UsuarioRepository;
 import com.arthurb.minhasfinancias.services.UsuarioService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,10 +16,12 @@ import java.util.Optional;
 public class UsuarioServiceImpl implements UsuarioService {
 
     private UsuarioRepository repository;
+    private PasswordEncoder encoder;
 
-    public UsuarioServiceImpl(UsuarioRepository repository){
+    public UsuarioServiceImpl(UsuarioRepository repository, PasswordEncoder encoder){
         super();
         this.repository = repository;
+        this.encoder = encoder;
     }
 
     @Override
@@ -29,7 +32,9 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new ErroAutenticacao("Usuário não encontrado para o email informado.");
         }
 
-        if(!usuario.get().getSenha().equals(senha)) {
+        boolean senhasBatem = encoder.matches(senha, usuario.get().getSenha());
+
+        if(!senhasBatem) {
             throw new ErroAutenticacao("Senha inválida.");
         }
 
@@ -40,8 +45,16 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Transactional
     public Usuario salvarUsuario(Usuario usuario) {
         validarEmail(usuario.getEmail());
+        criptografarSenha(usuario);
         return repository.save(usuario);
     }
+
+    private void criptografarSenha(Usuario usuario){
+        String senha  = usuario.getSenha();
+        String senhaCripto  = encoder.encode(senha);
+        usuario.setSenha(senhaCripto);
+    }
+
 
     @Override
     public void validarEmail(String email) {
